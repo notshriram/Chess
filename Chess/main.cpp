@@ -403,17 +403,21 @@ public:
 		//std::cin >> from >> to;
 		if (moving) {
 			if (dest) {
+				
 				torow = int(mouseY / 64);
 				tocol = int(mouseX / 64);
 				board.BoardMat[7 - torow][7 - tocol] = board.BoardMat[7 - fromrow][7 - fromcol];
 				board.BoardMat[7 - fromrow][7 - fromcol] = nullptr;
+				switchturn();
 				dest = false;
 			}
 			else
 			{
 				fromrow = int(mouseY / 64);
 				fromcol = int(mouseX / 64);
-				dest = true;
+				if (board.BoardMat[7 - fromrow][7 - fromcol] == nullptr)dest = false;
+				else if (board.BoardMat[7 - fromrow][7 - fromcol]->GetColor() != turn)dest = false;
+				else dest = true;
 			}
 		}
 		board.draw(renderer);
