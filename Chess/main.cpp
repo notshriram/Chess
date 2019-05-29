@@ -1,7 +1,7 @@
 #include"SDL.h"
 #include"SDL_ttf.h"
-#include<cstdio>
-
+#include<iostream>
+static int mouseX, mouseY;
 SDL_Color white = { 255, 255, 255 ,255 };
 SDL_Color black = {0,0,0,255};
 class Piece {
@@ -264,7 +264,7 @@ public:
 			{
 				if ((i + j) & 1) SDL_SetRenderDrawColor(renderer, 10, 50, 100, 255);
 				else SDL_SetRenderDrawColor(renderer, 240, 240, 220, 255);
-				SDL_Rect r = { 64 * j,64 * i,64,64 };
+				SDL_Rect r = { 64 * (7-j),64 *(7-i),64,64 };
 				SDL_RenderFillRect(renderer, &r);
 				if (BoardMat[i][j]!=nullptr) 
 				{
@@ -282,7 +282,7 @@ public:
 					int texW = 64;
 					int texH = 64;
 					texture = SDL_CreateTextureFromSurface(renderer, surface);
-					SDL_Rect dstrect = { 64*j, 64*i, texW, texH };
+					SDL_Rect dstrect = { 64*(7-j), 64*(7-i), texW, texH };
 					SDL_RenderCopy(renderer, texture, NULL, &dstrect);
 					SDL_FreeSurface(surface);
 					SDL_DestroyTexture(texture);
@@ -298,18 +298,143 @@ public:
 		}
 		//TTF_CloseFont(font);
 	}
+	bool IsInCheck(char cColor) {
+		// Find the king
+		int iKingRow;
+		int iKingCol;
+		for (int iRow = 0; iRow < 8; ++iRow) {
+			for (int iCol = 0; iCol < 8; ++iCol) {
+				if (BoardMat[iRow][iCol] != 0) {
+					if (BoardMat[iRow][iCol]->GetColor() == cColor) {
+						if (BoardMat[iRow][iCol]->GetPiece() == 'K') {
+							iKingRow = iRow;
+							iKingCol = iCol;
+						}
+					}
+				}
+			}
+		}
+		// Run through the opponent's pieces and see if any can take the king
+		for (int iRow = 0; iRow < 8; ++iRow) {
+			for (int iCol = 0; iCol < 8; ++iCol) {
+				if (BoardMat[iRow][iCol] != 0) {
+					if (BoardMat[iRow][iCol]->GetColor() != cColor) {
+						if (BoardMat[iRow][iCol]->isLegal(iRow, iCol, iKingRow, iKingCol, BoardMat)) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	bool CanMove(char cColor) {
+		// Run through all pieces
+		for (int iRow = 0; iRow < 8; ++iRow) {
+			for (int iCol = 0; iCol < 8; ++iCol) {
+				if (BoardMat[iRow][iCol] != 0) {
+					// If it is a piece of the current player, see if it has a legal move
+					if (BoardMat[iRow][iCol]->GetColor() == cColor) {
+						for (int iMoveRow = 0; iMoveRow < 8; ++iMoveRow) {
+							for (int iMoveCol = 0; iMoveCol < 8; ++iMoveCol) {
+								if (BoardMat[iRow][iCol]->isLegal(iRow, iCol, iMoveRow, iMoveCol, BoardMat)) {
+									// Make move and check whether king is in check
+									Piece* qpTemp = BoardMat[iMoveRow][iMoveCol];
+									BoardMat[iMoveRow][iMoveCol] = BoardMat[iRow][iCol];
+									BoardMat[iRow][iCol] = 0;
+									bool bCanMove = !IsInCheck(cColor);
+									// Undo the move
+									BoardMat[iRow][iCol] = BoardMat[iMoveRow][iMoveCol];
+									BoardMat[iMoveRow][iMoveCol] = qpTemp;
+									if (bCanMove) {
+										return true;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
 	Piece* BoardMat[8][8];
+};
+class Chess {
+public:
+	Chess() :turn('W') {}
+	~Chess() {}
+	void Init(SDL_Renderer* renderer)
+	{
+		board.draw(renderer);
+	}
+	void NextMove(Piece* BoardMat[8][8],SDL_Renderer* renderer)
+	{
+		bool ValidMove = false;
+		do {
+			if (!ValidMove) {
+				std::cout << "Invalid Move!" << std::endl;
+			}
+		} while (ValidMove);
+	}
+	void switchturn() {
+		turn = (turn == 'W' ? 'B':'W');
+	}
+	bool IsGameOver() {
+		bool bCanMove(false);
+		bCanMove = board.CanMove(turn);
+		if (!bCanMove) {
+			if (board.IsInCheck(turn)) {
+				switchturn();
+				std::cout << "Checkmate, " << turn << " Wins!" << std::endl;
+			}
+			else {
+				std::cout << "Stalemate!" << std::endl;
+			}
+		}
+		return !bCanMove;
+	}
+	bool dest = false;
+	int fromrow, fromcol, torow, tocol;
+	void update(SDL_Renderer* renderer,bool moving) {
+		
+		//std::cin >> from >> to;
+		if (moving) {
+			if (dest) {
+				torow = int(mouseY / 64);
+				tocol = int(mouseX / 64);
+				board.BoardMat[7 - torow][7 - tocol] = board.BoardMat[7 - fromrow][7 - fromcol];
+				board.BoardMat[7 - fromrow][7 - fromcol] = nullptr;
+				dest = false;
+			}
+			else
+			{
+				fromrow = int(mouseY / 64);
+				fromcol = int(mouseX / 64);
+				dest = true;
+			}
+		}
+		board.draw(renderer);
+	}
+private:
+	char turn;
+	Board board;
 };
 int main(int argc, char** argv) 
 {	
 	SDL_Init(SDL_INIT_EVERYTHING);
 	TTF_Init();
-	SDL_Window* window = SDL_CreateWindow("chess",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,512,512,SDL_WINDOW_SHOWN);
+	SDL_Window* window = SDL_CreateWindow("chess",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,512,512,SDL_WINDOW_SHOWN);
 	SDL_Renderer* renderer = SDL_CreateRenderer(window,-1,2);
 	//SDL_SetRenderDrawColor(renderer,0,0,0,255);
 	SDL_Event e;
-	Board board;
-	
+	Chess chess;
+	bool moving=false;
+	SDL_RenderClear(renderer);
+	chess.Init(renderer);
+	SDL_RenderPresent(renderer);
 	//SDL_SetRenderDrawColor(renderer,0,0,0,255);
 	bool isRunning = true;
 	while (isRunning) {
@@ -322,11 +447,18 @@ int main(int argc, char** argv)
 				switch (e.key.keysym.sym) {
 				case SDLK_ESCAPE:isRunning = false; break;
 				}
-
 			}
+			else if (e.type == SDL_MOUSEBUTTONDOWN) {
+				switch (e.button.button) {
+				case SDL_BUTTON_LEFT:SDL_GetMouseState(&mouseX, &mouseY);moving=true; break;
+				}
+			}
+			//else if (e.type == SDL_MOUSEBUTTONUP) { SDL_GetMouseState(&DestX, &DestY);  }
+			
 		}
 		SDL_RenderClear(renderer);
-		board.draw(renderer);
+		chess.update(renderer,moving);
+		moving = false;
 		SDL_RenderPresent(renderer);
 	}
 	
