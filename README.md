@@ -1,12 +1,12 @@
 # Chess
 Chess in C++ and SDL
 
-<img src="Capture.PNG" alt="Capture" width="200"/>
+<img src="Capture.PNG" alt="Capture" width="200"/></img>
 ## To Do:
-*Add Castling
-*Add Pawn Promotion
-*Implement neural network that learns to play chess
-*Implement an A.I using Minimax algorithm and alpha-beta pruning
+* Add Castling
+* Add Pawn Promotion
+* Implement neural network that learns to play chess
+* Implement an A.I using Minimax algorithm and alpha-beta pruning
 ### License
 MIT License
 
