@@ -2,7 +2,7 @@
 #include"SDL_ttf.h"
 #include<iostream>
 static int mouseX, mouseY, srcrow, srccol;
-
+static bool isRunning = true;
 SDL_Color white = { 255, 255, 255 ,255 };
 SDL_Color black = {0,0,0,255};
 class Piece {
@@ -231,7 +231,7 @@ private:
 };
 class Board {
 public:
-	TTF_Font* font = TTF_OpenFont("CHEQ_TT.ttf", 128);;
+	TTF_Font* font = TTF_OpenFont("Alpha.ttf", 128);;
 	
 	Board() {
 		for (int i = 0; i < 8; i++)
@@ -417,7 +417,6 @@ public:
 				if (currentpiece->isLegal(7-srcrow,7-srccol,7-torow,7-tocol,board.BoardMat)) 
 				{
 					Piece* temp = board.BoardMat[7 - torow][7 - tocol];
-
 						board.BoardMat[7 - torow][7 - tocol] = board.BoardMat[7 - fromrow][7 - fromcol];
 						board.BoardMat[7 - fromrow][7 - fromcol] = nullptr;
 						if (board.isKingCheck(turn))
@@ -432,6 +431,23 @@ public:
 				}
 				else {
 					std::cout << "illegal\n";
+				}
+				bool flag = true;
+				for (int i = 0; i < 8; i++) {
+					for (int j = 0; j < 8; j++) {
+						if (board.BoardMat[i][j] != nullptr) {
+							if (board.BoardMat[i][j]->GetColor() == turn)
+								if (board.CanMove(board.BoardMat[i][j], i, j))
+								{
+									flag = false;
+								}
+						}
+					}
+				}
+
+				if (flag) {
+					std::cout << "Checkmate. "<<(turn=='W'?"Black":"White")<<" wins\n";
+					isRunning = false;
 				}
 				currentpiece = nullptr;
 				dest = false;
@@ -457,7 +473,7 @@ public:
 							std::cout << "Illegal\n";
 								dest = false;
 						}
-					
+						
 					
 					}
 					else {
@@ -490,7 +506,7 @@ int main(int argc, char** argv)
 	SDL_RenderClear(renderer);
 	chess.Init(renderer);
 	SDL_RenderPresent(renderer);
-	bool isRunning = true;
+	
 	while (isRunning) {
 		while (SDL_PollEvent(&e)) {
 			if (e.type == SDL_QUIT)isRunning = false;
