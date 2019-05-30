@@ -1,12 +1,20 @@
 # Chess
-Chess in C++ and SDL
+Chess in C++ and SDL.
+
+Requires linking SDL2 and SDL2_ttf libraries. If you want to modify this code,make sure to link those libraries to your visual studio solution.
+
+If you just want to see it in action, Download the ```/Release``` folder with all the dll files in it and run chess.exe.
+
+Thank you :smiley:
 
 <img src="Capture.PNG" alt="Capture" width="200"/></img>
 ## To Do:
 * Add Castling
 * Add Pawn Promotion
+* Add Export to pgn and Algebraic Notation input
 * Implement neural network that learns to play chess
 * Implement an A.I using Minimax algorithm and alpha-beta pruning
+* Add connector for Stockfish(optional?) 
 ### License
 MIT License
 
