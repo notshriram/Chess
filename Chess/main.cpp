@@ -1,7 +1,7 @@
 #include"SDL.h"
 #include"SDL_ttf.h"
 #include<iostream>
-static int mouseX, mouseY;
+static int mouseX, mouseY, srcrow, srccol;
 SDL_Color white = { 255, 255, 255 ,255 };
 SDL_Color black = {0,0,0,255};
 class Piece {
@@ -23,6 +23,7 @@ private:
 	virtual bool LegalSquares(int SrcRow, int SrcCol, int DesRow, int DesCol, Piece* PieceBoardMat[8][8]) = 0;
 	char Color;
 };
+static Piece* currentpiece=nullptr;
 class Pawn : public Piece {
 public:
 	Pawn(char Color) : Piece(Color) {}
@@ -265,7 +266,16 @@ public:
 				if ((i + j) & 1) SDL_SetRenderDrawColor(renderer, 10, 50, 100, 255);
 				else SDL_SetRenderDrawColor(renderer, 240, 240, 220, 255);
 				SDL_Rect r = { 64 * (7-j),64 *(7-i),64,64 };
-				SDL_RenderFillRect(renderer, &r);
+				if (currentpiece != nullptr) {
+					if (currentpiece->isLegal(7 - srcrow, 7 - srccol, i, j, BoardMat))
+					{
+						SDL_SetRenderDrawColor(renderer, 0, 255, 0, 100);
+						SDL_Rect r1 = { 64 * (7 - j),64 * (7 - i),64,64 };
+						if (BoardMat[i][j] != nullptr)SDL_SetRenderDrawColor(renderer, 255, 0, 0, 100);
+						SDL_RenderFillRect(renderer, &r1);
+					}
+				}
+				SDL_RenderFillRect(renderer, &r);;
 				if (BoardMat[i][j]!=nullptr) 
 				{
 					SDL_Surface* surface = nullptr;;
@@ -399,28 +409,37 @@ public:
 	bool dest = false;
 	int fromrow, fromcol, torow, tocol;
 	void update(SDL_Renderer* renderer,bool moving) {
-		
-		//std::cin >> from >> to;
 		if (moving) {
 			if (dest) {
 				
 				torow = int(mouseY / 64);
 				tocol = int(mouseX / 64);
+				currentpiece = nullptr;
 				board.BoardMat[7 - torow][7 - tocol] = board.BoardMat[7 - fromrow][7 - fromcol];
 				board.BoardMat[7 - fromrow][7 - fromcol] = nullptr;
 				switchturn();
 				dest = false;
+				
 			}
 			else
 			{
+				
 				fromrow = int(mouseY / 64);
 				fromcol = int(mouseX / 64);
 				if (board.BoardMat[7 - fromrow][7 - fromcol] == nullptr)dest = false;
 				else if (board.BoardMat[7 - fromrow][7 - fromcol]->GetColor() != turn)dest = false;
-				else dest = true;
+				else {
+					currentpiece = (board.BoardMat[7 - fromrow][7 - fromcol]);
+					srcrow = fromrow;
+					srccol=fromcol;
+					dest = true; 
+
+				}
+				board.draw(renderer);
 			}
 		}
-		board.draw(renderer);
+		else board.draw(renderer);
+		
 	}
 private:
 	char turn;
@@ -432,19 +451,14 @@ int main(int argc, char** argv)
 	TTF_Init();
 	SDL_Window* window = SDL_CreateWindow("chess",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,512,512,SDL_WINDOW_SHOWN);
 	SDL_Renderer* renderer = SDL_CreateRenderer(window,-1,2);
-	//SDL_SetRenderDrawColor(renderer,0,0,0,255);
 	SDL_Event e;
 	Chess chess;
 	bool moving=false;
 	SDL_RenderClear(renderer);
 	chess.Init(renderer);
 	SDL_RenderPresent(renderer);
-	//SDL_SetRenderDrawColor(renderer,0,0,0,255);
 	bool isRunning = true;
 	while (isRunning) {
-	/*	pT = cT;
-		cT = SDL_GetTicks();
-		dT = cT - pT;*/
 		while (SDL_PollEvent(&e)) {
 			if (e.type == SDL_QUIT)isRunning = false;
 			else if (e.type == SDL_KEYDOWN) {
@@ -457,8 +471,6 @@ int main(int argc, char** argv)
 				case SDL_BUTTON_LEFT:SDL_GetMouseState(&mouseX, &mouseY);moving=true; break;
 				}
 			}
-			//else if (e.type == SDL_MOUSEBUTTONUP) { SDL_GetMouseState(&DestX, &DestY);  }
-			
 		}
 		SDL_RenderClear(renderer);
 		chess.update(renderer,moving);
