@@ -290,7 +290,19 @@ public:
 					}
 					else if (currentpiece->isLegal(7 - srcrow, 7 - srccol, i, j, BoardMat))
 					{	
-						if(BoardMat[i][j]!=nullptr)SDL_SetRenderDrawColor(renderer, 255, 0, 0, 100);
+						Piece* temp = BoardMat[i][j];
+
+						BoardMat[i][j] = BoardMat[7 - srcrow][7 - srccol];
+						BoardMat[7 - srcrow][7 - srccol] = nullptr;
+						bool flag = isKingCheck(currentpiece->GetColor());
+						BoardMat[7 -srcrow][7 - srccol] = BoardMat[ i][ j];
+						BoardMat[ i][j] = temp;
+						if (flag)
+						{
+							if ((i + j) & 1) SDL_SetRenderDrawColor(renderer, 10, 50, 100, 255);
+							else SDL_SetRenderDrawColor(renderer, 240, 240, 220, 255);
+						}
+						else if(BoardMat[i][j]!=nullptr)SDL_SetRenderDrawColor(renderer, 255, 0, 0, 100);
 						else SDL_SetRenderDrawColor(renderer, 0, 255, 0, 100);
 
 					}
@@ -331,9 +343,8 @@ public:
 	
 
 	bool CanMove(Piece* p,int srcrow,int srccol) {
-		// Run through all pieces
 		int cColor = p->GetColor();
-					// If it is a piece of the current player, see if it has a legal move
+					//see if piece has a legal move
 						for (int iMoveRow = 0; iMoveRow < 8; ++iMoveRow) {
 							for (int iMoveCol = 0; iMoveCol < 8; ++iMoveCol) {
 								if (p->isLegal(srcrow, srccol, iMoveRow, iMoveCol, BoardMat)) {
@@ -401,15 +412,22 @@ public:
 	void update(SDL_Renderer* renderer,bool moving) {
 		if (moving) {
 			if (dest) {
-				
 				torow = int(mouseY / 64);
 				tocol = int(mouseX / 64);
 				if (currentpiece->isLegal(7-srcrow,7-srccol,7-torow,7-tocol,board.BoardMat)) 
 				{
+					Piece* temp = board.BoardMat[7 - torow][7 - tocol];
 
-					board.BoardMat[7 - torow][7 - tocol] = board.BoardMat[7 - fromrow][7 - fromcol];
-					board.BoardMat[7 - fromrow][7 - fromcol] = nullptr;
-					switchturn();
+						board.BoardMat[7 - torow][7 - tocol] = board.BoardMat[7 - fromrow][7 - fromcol];
+						board.BoardMat[7 - fromrow][7 - fromcol] = nullptr;
+						if (board.isKingCheck(turn))
+						{
+							board.BoardMat[7 - fromrow][7 - fromcol] = board.BoardMat[7 - torow][7 - tocol];
+							board.BoardMat[7 - torow][7 - tocol] = temp;
+							std::cout << "Illegal, king exposed to check\n";
+						}
+						else
+						switchturn();
 					
 				}
 				else {
