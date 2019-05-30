@@ -41,11 +41,15 @@ private:
 					if (DesRow == SrcRow + 1) {
 						return true;
 					}
+					if ((SrcRow==1)&&(DesRow == SrcRow + 2)) {
+						return true;
+					}
 				}
 				else {
 					if (DesRow == SrcRow - 1) {
 						return true;
 					}
+					if ((SrcRow == 6) && (DesRow == SrcRow - 2))return true;
 				}
 			}
 		}
@@ -260,12 +264,12 @@ public:
 	}
 	void draw(SDL_Renderer* renderer) {
 
-		for (int i = 0; i < 8; i++)
+		for (int i = 0; i < 8; i++){
 			for (int j = 0; j < 8; j++)
 			{
 				if ((i + j) & 1) SDL_SetRenderDrawColor(renderer, 10, 50, 100, 255);
 				else SDL_SetRenderDrawColor(renderer, 240, 240, 220, 255);
-				SDL_Rect r = { 64 * (7-j),64 *(7-i),64,64 };
+				SDL_Rect r = { 64 * (7 - j),64 * (7 - i),64,64 };
 				if (currentpiece != nullptr) {
 					if (currentpiece->isLegal(7 - srcrow, 7 - srccol, i, j, BoardMat))
 					{
@@ -276,13 +280,13 @@ public:
 					}
 				}
 				SDL_RenderFillRect(renderer, &r);;
-				if (BoardMat[i][j]!=nullptr) 
+				if (BoardMat[i][j] != nullptr)
 				{
 					SDL_Surface* surface = nullptr;;
-					SDL_Texture* texture =nullptr;
+					SDL_Texture* texture = nullptr;
 					switch (BoardMat[i][j]->GetPiece())
 					{
-					case 'P': {surface = TTF_RenderGlyph_Blended(font,(BoardMat[i][j]->GetColor()=='W'?'p':'o'), black); break; }
+					case 'P': {surface = TTF_RenderGlyph_Blended(font, (BoardMat[i][j]->GetColor() == 'W' ? 'p' : 'o'), black); break; }
 					case 'B': {surface = TTF_RenderGlyph_Blended(font, (BoardMat[i][j]->GetColor() == 'W' ? 'b' : 'n'), black); break; }
 					case 'N': {surface = TTF_RenderGlyph_Blended(font, (BoardMat[i][j]->GetColor() == 'W' ? 'h' : 'j'), black); break; }
 					case 'Q': {surface = TTF_RenderGlyph_Blended(font, (BoardMat[i][j]->GetColor() == 'W' ? 'q' : 'w'), black); break; }
@@ -292,12 +296,14 @@ public:
 					int texW = 64;
 					int texH = 64;
 					texture = SDL_CreateTextureFromSurface(renderer, surface);
-					SDL_Rect dstrect = { 64*(7-j), 64*(7-i), texW, texH };
+					SDL_Rect dstrect = { 64 * (7 - j), 64 * (7 - i), texW, texH };
 					SDL_RenderCopy(renderer, texture, NULL, &dstrect);
 					SDL_FreeSurface(surface);
 					SDL_DestroyTexture(texture);
 				}
 			}
+			}
+		SDL_RenderPresent(renderer);
 	}
 	~Board() {
 		for (int i = 0; i < 8; ++i) {
@@ -414,12 +420,19 @@ public:
 				
 				torow = int(mouseY / 64);
 				tocol = int(mouseX / 64);
+				if (currentpiece->isLegal(7-srcrow,7-srccol,7-torow,7-tocol,board.BoardMat)) 
+				{
+
+					board.BoardMat[7 - torow][7 - tocol] = board.BoardMat[7 - fromrow][7 - fromcol];
+					board.BoardMat[7 - fromrow][7 - fromcol] = nullptr;
+					switchturn();
+					
+				}
+				else {
+					std::cout << "illegal\n";
+				}
 				currentpiece = nullptr;
-				board.BoardMat[7 - torow][7 - tocol] = board.BoardMat[7 - fromrow][7 - fromcol];
-				board.BoardMat[7 - fromrow][7 - fromcol] = nullptr;
-				switchturn();
 				dest = false;
-				
 			}
 			else
 			{
@@ -475,7 +488,7 @@ int main(int argc, char** argv)
 		SDL_RenderClear(renderer);
 		chess.update(renderer,moving);
 		moving = false;
-		SDL_RenderPresent(renderer);
+		//SDL_RenderPresent(renderer);
 	}
 	
 	SDL_DestroyRenderer(renderer);
