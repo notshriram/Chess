@@ -2,6 +2,7 @@
 #include"SDL_ttf.h"
 #include<iostream>
 static int mouseX, mouseY, srcrow, srccol;
+
 SDL_Color white = { 255, 255, 255 ,255 };
 SDL_Color black = {0,0,0,255};
 class Piece {
@@ -271,12 +272,27 @@ public:
 				else SDL_SetRenderDrawColor(renderer, 240, 240, 220, 255);
 				SDL_Rect r = { 64 * (7 - j),64 * (7 - i),64,64 };
 				if (currentpiece != nullptr) {
-					if (currentpiece->isLegal(7 - srcrow, 7 - srccol, i, j, BoardMat))
-					{
-						SDL_SetRenderDrawColor(renderer, 0, 255, 0, 100);
-						SDL_Rect r1 = { 64 * (7 - j),64 * (7 - i),64,64 };
-						if (BoardMat[i][j] != nullptr)SDL_SetRenderDrawColor(renderer, 255, 0, 0, 100);
-						SDL_RenderFillRect(renderer, &r1);
+					if (isKingCheck(currentpiece->GetColor())) {
+						char cColor = currentpiece->GetColor();
+						if (currentpiece->isLegal(7-srcrow,7-srccol,i,j, BoardMat))
+						{
+							Piece* qpTemp = BoardMat[i][j];
+							BoardMat[i][ j] = BoardMat[7-srcrow][7-srccol];
+							BoardMat[7-srcrow][7-srccol] = nullptr;
+							bool bCanMove = !isKingCheck(cColor);
+							BoardMat[7-srcrow][7-srccol] = BoardMat[i][j];
+							BoardMat[i][j] = qpTemp;
+							if (bCanMove) {
+								if (BoardMat[i][j] != nullptr)SDL_SetRenderDrawColor(renderer, 255, 0, 0, 100);
+								else SDL_SetRenderDrawColor(renderer, 0, 255, 0, 100);
+							}
+						}
+					}
+					else if (currentpiece->isLegal(7 - srcrow, 7 - srccol, i, j, BoardMat))
+					{	
+						if(BoardMat[i][j]!=nullptr)SDL_SetRenderDrawColor(renderer, 255, 0, 0, 100);
+						else SDL_SetRenderDrawColor(renderer, 0, 255, 0, 100);
+
 					}
 				}
 				SDL_RenderFillRect(renderer, &r);;
@@ -293,10 +309,8 @@ public:
 					case 'K': {surface = TTF_RenderGlyph_Blended(font, (BoardMat[i][j]->GetColor() == 'W' ? 'k' : 'l'), black); break; }
 					case 'R': {surface = TTF_RenderGlyph_Blended(font, (BoardMat[i][j]->GetColor() == 'W' ? 'r' : 't'), black); break; }
 					}
-					int texW = 64;
-					int texH = 64;
 					texture = SDL_CreateTextureFromSurface(renderer, surface);
-					SDL_Rect dstrect = { 64 * (7 - j), 64 * (7 - i), texW, texH };
+					SDL_Rect dstrect = { 64 * (7 - j), 64 * (7 - i), 64,64 };
 					SDL_RenderCopy(renderer, texture, NULL, &dstrect);
 					SDL_FreeSurface(surface);
 					SDL_DestroyTexture(texture);
@@ -314,55 +328,22 @@ public:
 		}
 		//TTF_CloseFont(font);
 	}
-	bool IsInCheck(char cColor) {
-		// Find the king
-		int iKingRow;
-		int iKingCol;
-		for (int iRow = 0; iRow < 8; ++iRow) {
-			for (int iCol = 0; iCol < 8; ++iCol) {
-				if (BoardMat[iRow][iCol] != 0) {
-					if (BoardMat[iRow][iCol]->GetColor() == cColor) {
-						if (BoardMat[iRow][iCol]->GetPiece() == 'K') {
-							iKingRow = iRow;
-							iKingCol = iCol;
-						}
-					}
-				}
-			}
-		}
-		// Run through the opponent's pieces and see if any can take the king
-		for (int iRow = 0; iRow < 8; ++iRow) {
-			for (int iCol = 0; iCol < 8; ++iCol) {
-				if (BoardMat[iRow][iCol] != 0) {
-					if (BoardMat[iRow][iCol]->GetColor() != cColor) {
-						if (BoardMat[iRow][iCol]->isLegal(iRow, iCol, iKingRow, iKingCol, BoardMat)) {
-							return true;
-						}
-					}
-				}
-			}
-		}
+	
 
-		return false;
-	}
-
-	bool CanMove(char cColor) {
+	bool CanMove(Piece* p,int srcrow,int srccol) {
 		// Run through all pieces
-		for (int iRow = 0; iRow < 8; ++iRow) {
-			for (int iCol = 0; iCol < 8; ++iCol) {
-				if (BoardMat[iRow][iCol] != 0) {
+		int cColor = p->GetColor();
 					// If it is a piece of the current player, see if it has a legal move
-					if (BoardMat[iRow][iCol]->GetColor() == cColor) {
 						for (int iMoveRow = 0; iMoveRow < 8; ++iMoveRow) {
 							for (int iMoveCol = 0; iMoveCol < 8; ++iMoveCol) {
-								if (BoardMat[iRow][iCol]->isLegal(iRow, iCol, iMoveRow, iMoveCol, BoardMat)) {
+								if (p->isLegal(srcrow, srccol, iMoveRow, iMoveCol, BoardMat)) {
 									// Make move and check whether king is in check
 									Piece* qpTemp = BoardMat[iMoveRow][iMoveCol];
-									BoardMat[iMoveRow][iMoveCol] = BoardMat[iRow][iCol];
-									BoardMat[iRow][iCol] = 0;
-									bool bCanMove = !IsInCheck(cColor);
+									BoardMat[iMoveRow][iMoveCol] = BoardMat[srcrow][srccol];
+									BoardMat[srcrow][srccol] = 0;
+									bool bCanMove = !isKingCheck(cColor);
 									// Undo the move
-									BoardMat[iRow][iCol] = BoardMat[iMoveRow][iMoveCol];
+									BoardMat[srcrow][srccol] = BoardMat[iMoveRow][iMoveCol];
 									BoardMat[iMoveRow][iMoveCol] = qpTemp;
 									if (bCanMove) {
 										return true;
@@ -370,12 +351,38 @@ public:
 								}
 							}
 						}
+		return false;
+	}
+	bool isKingCheck(char col) {
+		int kingrow, kingcol;
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++)
+			{
+				if (BoardMat[i][j] != nullptr)
+				{
+					if ((BoardMat[i][j]->GetPiece() == 'K') && (BoardMat[i][j]->GetColor() == col))
+					{
+						kingrow=i;
+						kingcol=j;
 					}
+				
 				}
+			}
+		}
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++)
+			{
+				if (BoardMat[i][j] != nullptr) 
+				{
+					if (BoardMat[i][j]->isLegal(i, j, kingrow, kingcol, BoardMat))
+						return true;
+				}
+
 			}
 		}
 		return false;
 	}
+
 	Piece* BoardMat[8][8];
 };
 class Chess {
@@ -386,31 +393,8 @@ public:
 	{
 		board.draw(renderer);
 	}
-	void NextMove(Piece* BoardMat[8][8],SDL_Renderer* renderer)
-	{
-		bool ValidMove = false;
-		do {
-			if (!ValidMove) {
-				std::cout << "Invalid Move!" << std::endl;
-			}
-		} while (ValidMove);
-	}
 	void switchturn() {
 		turn = (turn == 'W' ? 'B':'W');
-	}
-	bool IsGameOver() {
-		bool bCanMove(false);
-		bCanMove = board.CanMove(turn);
-		if (!bCanMove) {
-			if (board.IsInCheck(turn)) {
-				switchturn();
-				std::cout << "Checkmate, " << turn << " Wins!" << std::endl;
-			}
-			else {
-				std::cout << "Stalemate!" << std::endl;
-			}
-		}
-		return !bCanMove;
 	}
 	bool dest = false;
 	int fromrow, fromcol, torow, tocol;
@@ -442,10 +426,28 @@ public:
 				if (board.BoardMat[7 - fromrow][7 - fromcol] == nullptr)dest = false;
 				else if (board.BoardMat[7 - fromrow][7 - fromcol]->GetColor() != turn)dest = false;
 				else {
-					currentpiece = (board.BoardMat[7 - fromrow][7 - fromcol]);
-					srcrow = fromrow;
-					srccol=fromcol;
-					dest = true; 
+					if (board.isKingCheck(turn))
+					{
+						if (board.CanMove(board.BoardMat[7 - fromrow][7 - fromcol],7-fromrow,7-fromcol))
+						{
+							currentpiece = (board.BoardMat[7 - fromrow][7 - fromcol]);
+							srcrow = fromrow;
+							srccol = fromcol;
+							dest = true;
+						}
+						else {
+							std::cout << "Illegal\n";
+								dest = false;
+						}
+					
+					
+					}
+					else {
+						currentpiece = (board.BoardMat[7 - fromrow][7 - fromcol]);
+						srcrow = fromrow;
+						srccol = fromcol;
+						dest = true;
+					}
 
 				}
 				board.draw(renderer);
