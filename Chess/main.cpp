@@ -446,7 +446,9 @@ public:
 				}
 
 				if (flag) {
+					if(board.isKingCheck(turn ))
 					std::cout << "Checkmate. "<<(turn=='W'?"Black":"White")<<" wins\n";
+					else std::cout << "Stalemate\n";
 					isRunning = false;
 				}
 				currentpiece = nullptr;
